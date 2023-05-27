@@ -1,28 +1,39 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const route = require('./routes/route');
-const mongoose = require('mongoose');
-const app = express();
-const multer = require("multer")
-
-app.use(bodyParser.json());
-app.use(multer().any())
+const app = require("./app.js")
+const dotenv = require("dotenv")
+const connection = require("./config/mongoseConnection.js")
+const cloudinary = require("cloudinary");
 
 
-mongoose.connect("mongodb+srv://Monalisamishra:MDYlL3MKtGxQa59a@cluster0.7zrfpkj.mongodb.net/group1Database", {
-    useNewUrlParser: true
+process.on("uncaughtException" , (err)=>{
+    console.log(`Error is ${err}`)
+    console.log(`Shutting Down due to Uncaught Exception error`)
+
+    process.exit(1)
 })
-    .then(() => console.log("MongoDb is connected"))
-    .catch(err => console.log(err))
 
-app.use('/', route);
+//Set environment Configration
+dotenv.config({path : "src/config/.env"})
 
-app.use((req, res, next) => {
-    const error = new Error('/ Path not found /');
-    return res.status(400).send({ status: 'ERROR', error: error.message })
-});
+//Made connection with mongoDb
+connection()
 
+//Cloudanary Config
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
 
-app.listen(process.env.PORT || 3000, function () {
-    console.log('Express app running on port ' + (process.env.PORT || 3000))
-});
+const server =  app.listen(process.env.PORT || 4000 , ()=>{
+    console.log(`Listening On Port ${process.env.PORT || 4000}`)
+})
+
+process.on("unhandledRejection", (err)=>{
+    console.log(`Error is ${err}`)
+    console.log(`Shutting Down due to Unhandled Promised Rejection`)
+
+    server.close(()=>{
+        process.exit(1)
+    })
+})
+
